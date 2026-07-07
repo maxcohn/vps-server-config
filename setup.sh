@@ -7,28 +7,42 @@
 
 set -euo pipefail
 
+RUN_CERTBOT=false
+for arg in "$@"; do
+  [[ "$arg" == "--certbot" ]] && RUN_CERTBOT=true
+done
+
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Install dependencies
+echo "Installing dependencies"
 apt-get update -y
 apt-get install -y nginx certbot python3-certbot-nginx
 
 # Deploy nginx configs
+echo "Moving nginx configs"
 cp "$REPO_DIR/etc/nginx/sites-available/website.conf" /etc/nginx/sites-available/website.conf
 cp "$REPO_DIR/etc/nginx/sites-available/ip.conf"      /etc/nginx/sites-available/ip.conf
 
 # Enable sites if not already symlinked
+echo "Enable all nginx sites"
 ln -sf /etc/nginx/sites-available/website.conf /etc/nginx/sites-enabled/website.conf
 ln -sf /etc/nginx/sites-available/ip.conf      /etc/nginx/sites-enabled/ip.conf
 
+echo "Restart nginx"
 nginx -t
 systemctl reload nginx
 
-# Issue / expand TLS certificate
-certbot --nginx --expand \
-  -d maxcohn.org \
-  -d www.maxcohn.org \
-  -d max-cohn.com \
-  -d www.max-cohn.com \
-  -d ip.maxcohn.org \
-  -d ip.max-cohn.com
+# Issue / expand TLS certificate (opt-in via --certbot flag)
+if [[ "$RUN_CERTBOT" == true ]]; then
+  echo "Run certbot"
+  certbot --nginx --expand \
+    -d maxcohn.org \
+    -d www.maxcohn.org \
+    -d max-cohn.com \
+    -d www.max-cohn.com \
+    -d ip.maxcohn.org \
+    -d ip.max-cohn.com
+else
+  echo "Skipping certbot (pass --certbot to enable)"
+fi
