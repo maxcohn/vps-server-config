@@ -1,0 +1,27 @@
+server {
+	server_name www.maxcohn.org;
+	return 301 $scheme://maxcohn.org;
+}
+
+server {
+	server_name maxcohn.org;
+
+	gzip on;
+	gzip_vary on;
+	gzip_min_length 1024;
+	gzip_proxied expired no-cache no-store private auth;
+	gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml;
+	gzip_disable "MSIE [1-6]\.";
+
+	root /var/www/html/maxcohn.org;
+	# Disable .htaccess and other hidden files
+	location ~ /\.(?!well-known).* {
+		deny all;
+		access_log off;
+		log_not_found off;
+		return 404;
+	}
+	location / {
+		index index.html;
+	}
+}
